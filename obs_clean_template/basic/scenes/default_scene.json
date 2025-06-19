@@ -1,0 +1,11 @@
+{
+  "name": "Default Scene",
+  "current_scene": "Default Scene",
+  "scenes": [{
+    "name": "Default Scene",
+    "sources": [],
+    "settings": {}
+  }],
+  "sources": [],
+  "version": "1.0.0"
+}
