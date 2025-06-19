@@ -7,6 +7,8 @@ import uuid
 import winreg
 import tkinter as tk
 from tkinter import messagebox, ttk
+import time
+
 
 # Configuration
 USERS_FILE = "obs_users.json"
@@ -134,31 +136,66 @@ class OBSUserManager:
         if not os.path.exists(user_config_path):
             self.create_obs_config(username)
 
+        # Robustly remove existing config folder if it exists
         if os.path.exists(appdata_config_path):
-            shutil.rmtree(appdata_config_path)
-        shutil.copytree(user_config_path, appdata_config_path)
+            try:
+                shutil.rmtree(appdata_config_path)
+            except Exception as e:
+                # Sometimes files can be locked, retry a few times
+                for _ in range(5):
+                    time.sleep(0.5)
+                    try:
+                        shutil.rmtree(appdata_config_path)
+                        break
+                    except Exception:
+                        pass
+                else:
+                    messagebox.showerror("Error", f"Failed to delete existing OBS config folder:\n{e}")
+                    return False
 
+        try:
+            # Python 3.8+: dirs_exist_ok=True allows copying into existing folders
+            shutil.copytree(user_config_path, appdata_config_path)
+        except FileExistsError:
+            # As a fallback, try with dirs_exist_ok=True if Python version supports it
+            try:
+                shutil.copytree(user_config_path, appdata_config_path, dirs_exist_ok=True)
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to copy OBS config:\n{e}")
+                return False
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to copy OBS config:\n{e}")
+            return False
+
+        # Clean up some files if they exist
         for f in ["global.ini.bak", "global.json", "global.json.bak"]:
             try:
                 os.remove(os.path.join(appdata_config_path, f))
             except FileNotFoundError:
                 pass
+            except Exception as e:
+                print(f"Warning: Could not remove {f}: {e}")
 
+        # Remove unwanted folders quietly
         for folder in ["logs", "crashes", "plugin_config"]:
             shutil.rmtree(os.path.join(appdata_config_path, folder), ignore_errors=True)
 
+        # Create config directory and write basic.ini
         config_dir = os.path.join(appdata_config_path, "config")
         os.makedirs(config_dir, exist_ok=True)
-        with open(os.path.join(config_dir, "basic.ini"), "w") as f:
-            f.write(f"[General]\nProfileDir={username}\n")
+        try:
+            with open(os.path.join(config_dir, "basic.ini"), "w") as f:
+                f.write(f"[General]\nProfileDir={username}\n")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to write basic.ini:\n{e}")
+            return False
 
-        # Check if OBS's expected locale file exists
+        # Check if OBS locale file exists
         expected_locale = os.path.join(os.path.dirname(self.obs_path), "..", "..", "data", "obs-studio", "locale", "en-US.ini")
         if not os.path.exists(os.path.abspath(expected_locale)):
             messagebox.showerror("Error", f"Missing OBS locale file: {expected_locale}")
             return False
 
-        # ✅ Do NOT launch OBS here. Only return success
         return True
 
 
@@ -223,6 +260,19 @@ class OBSLoginApp:
 
         if self.user_manager.launch_obs(username):
             self.root.destroy()
+
+
+        time.sleep(1)  # Wait a moment to ensure OBS is ready
+        ## Launch OBS after successful login
+        obs_exe = r"C:\Program Files\obs-studio\bin\64bit\obs64.exe"
+        obs_cwd = r"C:\Program Files\obs-studio\bin\64bit"  # Main OBS folder
+        try:
+            subprocess.Popen([obs_exe, "--disable-shutdown-check"], cwd=obs_cwd)
+            print("OBS launched successfully.")
+        except FileNotFoundError:
+            print("OBS executable not found. Please check the path.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
     def show_create_account(self):
         create_window = tk.Toplevel(self.root)
