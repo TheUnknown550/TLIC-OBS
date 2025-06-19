@@ -14,12 +14,14 @@
 
 ## How to Use
 
-1. **Download and Extract:** Download the exported `.exe` file and place it in a folder of your choice.
-2. **Run the Application:** Double-click the `.exe` file to start the OBS User Manager.
+1. **Download and Extract:** Download the exported `.exe` file **and** the `clean` folder. Place both in a folder of your choice.
+2. **Run the Application:** Double-click or link StreamDeck with the `create.exe` file to start the OBS User Manager.  
+   > Currently, link with the "Start System" button in the StreamDeck software.
 3. **Create an Account:** Click "Create New Account" and enter a username (min. 3 characters) and password (min. 6 characters).
 4. **Login:** Enter your credentials and click "Login".
 5. **Start OBS:** After login, open OBS Studio manually. Your personalized configuration will be loaded.
-6. **Switch Users:** Close OBS, then log in as a different user through the OBS User Manager.
+6. **Switch Users:** To switch users, run the `exit.exe` file to close OBS and save user data, then log in as a different user through the OBS User Manager.
+
 
 ## Requirements
 
